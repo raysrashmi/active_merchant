@@ -132,31 +132,6 @@ module ActiveMerchant #:nodoc:
         commit(build_credit_request(money, identification, options), options)
       end
       
-      def create_subscription(creditcard, options = {})
-        requires!(options, :subscription, :billing_address, :order_id, :email)
-        requires!(options[:subscription], [:frequency, "on-demand", "weekly", "bi-weekly", "semi-monthly", "quarterly", "quad-weekly", "semi-annually", "annually"],:start_date, :occurrences, :auto_renew)
-        requires!(options[:billing_address], :first_name, :last_name)
-        setup_address_hash(options)
-        commit(build_create_subscription_request(creditcard, options), options)
-      end
-
-      def update_subscription(identification, options = {})
-        requires!(options, :order_id)
-        setup_address_hash(options)
-        commit(build_update_subscription_request(identification, options), options)
-      end
-
-      def retrieve_subscription(identification, options = {})
-       commit(build_retrieve_subscription_request(identification, options), options)
-      end
-
-      def subscription_authorization(money, identification, options = {})
-        commit(build_subscription_authorization_request(money, identification, options), options)
-      end
-
-      def subscription_purchase(money, identification, options = {})
-        commit(build_subscription_purchase_request(money, identification, options), options)
-      end
 
       # CyberSource requires that you provide line item information for tax calculations
       # If you do not have prices for each item or want to simplify the situation then pass in one fake line item that costs the subtotal of the order
@@ -197,8 +172,7 @@ module ActiveMerchant #:nodoc:
       
       def build_auth_request(money, creditcard, options)
         xml = Builder::XmlMarkup.new :indent => 2
-        add_address(xml, options[:billing_address], options)
-        add_address(xml, options[:shipping_address], options, true) if options[:shipping_address]
+        add_address(xml, creditcard, options[:billing_address], options)
         add_purchase_data(xml, money, true, options)
         add_creditcard(xml, creditcard)
         add_auth_service(xml)
@@ -208,8 +182,8 @@ module ActiveMerchant #:nodoc:
 
       def build_tax_calculation_request(creditcard, options)
         xml = Builder::XmlMarkup.new :indent => 2
-        add_address(xml, options[:billing_address], options)
-        add_address(xml, options[:shipping_address], options, true) if options[:shipping_address]
+        add_address(xml, creditcard, options[:billing_address], options, false)
+        add_address(xml, creditcard, options[:shipping_address], options, true)
         add_line_item_data(xml, options)
         add_purchase_data(xml, 0, false, options)
         add_tax_service(xml)
@@ -230,8 +204,7 @@ module ActiveMerchant #:nodoc:
 
       def build_purchase_request(money, creditcard, options)
         xml = Builder::XmlMarkup.new :indent => 2
-        add_address(xml, options[:billing_address], options)
-        add_address(xml, options[:shipping_address], options, true) if options[:shipping_address]
+        add_address(xml, creditcard, options[:billing_address], options)
         add_purchase_data(xml, money, true, options)
         add_creditcard(xml, creditcard)
         add_purchase_service(xml, options)
@@ -344,7 +317,7 @@ module ActiveMerchant #:nodoc:
       
       def add_merchant_data(xml, options)
         xml.tag! 'merchantID', @options[:login]
-        xml.tag! 'merchantReferenceCode', options[:order_id] || '1111'
+        xml.tag! 'merchantReferenceCode', options[:order_id]
         xml.tag! 'clientLibrary' ,'Ruby Active Merchant'
         xml.tag! 'clientLibraryVersion',  '1.0'
         xml.tag! 'clientEnvironment' , 'Linux'
@@ -353,14 +326,14 @@ module ActiveMerchant #:nodoc:
       def add_purchase_data(xml, money = 0, include_grand_total = false, options={})
         xml.tag! 'purchaseTotals' do
           xml.tag! 'currency', options[:currency] || currency(money)
-          money == 0 ? xml.tag!('grandTotalAmount','0.0') : xml.tag!('grandTotalAmount', amount(money)) if include_grand_total
+          xml.tag!('grandTotalAmount', amount(money))  if include_grand_total 
         end
       end
 
-      def add_address(xml, address, options, shipTo = false)
+      def add_address(xml, creditcard, address, options, shipTo = false)      
         xml.tag! shipTo ? 'shipTo' : 'billTo' do
-          xml.tag! 'firstName', address[:first_name]
-          xml.tag! 'lastName', address[:last_name]
+          xml.tag! 'firstName', creditcard.first_name
+          xml.tag! 'lastName', creditcard.last_name 
           xml.tag! 'street1', address[:address1]
           xml.tag! 'street2', address[:address2]
           xml.tag! 'city', address[:city]
@@ -415,36 +388,6 @@ module ActiveMerchant #:nodoc:
         xml.tag! 'ccCreditService', {'run' => 'true'} do
           xml.tag! 'captureRequestID', request_id
           xml.tag! 'captureRequestToken', request_token
-        end
-      end
-
-      def add_subscription_create_service(xml, options)
-        add_auth_service(xml) if options[:setup_fee]
-        xml.tag! 'paySubscriptionCreateService', {'run' => 'true'}
-      end
-
-      def add_subscription_update_service(xml, options)
-	add_auth_service(xml) if options[:setup_fee]
-	xml.tag! 'paySubscriptionUpdateService', {'run' => 'true'}
-      end
-
-      def add_subscription_retrieve_service(xml, options)
-	xml.tag! 'paySubscriptionRetrieveService', {'run' => 'true'}
-      end
-
-      def add_subscription(xml, options)
-        xml.tag! 'recurringSubscriptionInfo' do
-          xml.tag! 'subscriptionID',    options[:subscription][:subscription_id]
-          xml.tag! 'status',            options[:subscription][:status] if options[:subscription][:status]
-          xml.tag! 'amount',            options[:subscription][:amount] if options[:subscription][:amount]
-          xml.tag! 'numberOfPayments',  options[:subscription][:occurrences] if options[:subscription][:occurrences]
-          xml.tag! 'automaticRenew',    options[:subscription][:auto_renew] if options[:subscription][:auto_renew]
-          xml.tag! 'frequency',         options[:subscription][:frequency] if options[:subscription][:frequency]
-          xml.tag! 'startDate',         options[:subscription][:start_date].strftime("%Y%m%d") if options[:subscription][:start_date]
-          xml.tag! 'endDate',           options[:subscription][:end_date].strftime("%Y%m%d")   if options[:subscription][:end_date]
-          xml.tag! 'approvalRequired',  options[:subscription][:approval_required] || false
-          xml.tag! 'event',             options[:subscription][:event] if options[:subscription][:event]
-          xml.tag! 'billPayment',       options[:subscription][:bill_payment] if options[:subscription][:bill_payment]
         end
       end
 

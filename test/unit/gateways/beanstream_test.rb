@@ -63,11 +63,11 @@ class BeanstreamTest < Test::Unit::TestCase
     assert_success response
     assert_equal '10000028;15.00;P', response.authorization
   end
-
+  
   def test_successful_test_request_in_production_environment
     Base.mode = :production
     @gateway.expects(:ssl_post).returns(successful_test_purchase_response)
-
+    
     assert response = @gateway.purchase(@amount, @credit_card, @options)
     assert_success response
     assert response.test?
@@ -104,9 +104,6 @@ class BeanstreamTest < Test::Unit::TestCase
     assert_equal 'Approved', response.message
   end
 
-
-  # Testing Non-American countries
-
   def test_german_address_sets_state_to_the_required_dummy_value
     @gateway.expects(:commit).with(german_address_params_without_state)
     billing = @options[:billing_address]
@@ -115,10 +112,8 @@ class BeanstreamTest < Test::Unit::TestCase
     billing[:zip]      = '12345'
     billing[:state]    = nil
     @options[:shipping_address] = billing
-
     @gateway.purchase(@amount, @credit_card, @options)
   end
-
   def test_brazilian_address_sets_state_and_zip_to_the_required_dummy_values
     @gateway.expects(:commit).with(brazilian_address_params_without_zip_and_state)
     billing = @options[:billing_address]

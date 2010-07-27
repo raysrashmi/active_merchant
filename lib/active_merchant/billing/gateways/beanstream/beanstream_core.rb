@@ -54,7 +54,6 @@ module ActiveMerchant #:nodoc:
         # The name of the gateway
         base.display_name = 'Beanstream.com'
       end
-
       # Only <tt>:login</tt> is required by default, 
       # which is the merchant's merchant ID. If you'd like to perform void, 
       # capture or credit transactions then you'll also need to add a username
@@ -65,7 +64,6 @@ module ActiveMerchant #:nodoc:
         @options = options
         super
       end
-
       def capture(money, authorization, options = {})
         reference, amount, type = split_auth(authorization)
 
@@ -75,7 +73,6 @@ module ActiveMerchant #:nodoc:
         add_transaction_type(post, :capture)
         commit(post)
       end
-
       def credit(money, source, options = {})
         post = {}
         reference, amount, type = split_auth(source)
@@ -84,7 +81,6 @@ module ActiveMerchant #:nodoc:
         add_amount(post, money)
         commit(post)
       end
-
       private
       def purchase_action(source)
         card_brand(source) == "check" ? :check_purchase : :purchase
@@ -161,7 +157,6 @@ module ActiveMerchant #:nodoc:
         post[:ordTax2Price]     = amount(options[:tax2])
         post[:ref1]             = options[:custom]
       end
-
       def add_credit_card(post, credit_card)
         post[:trnCardOwner] = credit_card.name
         post[:trnCardNumber] = credit_card.number

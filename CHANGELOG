@@ -1,5 +1,22 @@
 = ActiveMerchant CHANGELOG
 
+* Pull in only the necessary components of Active Support. Enables use of ActiveMerchant with Rails 3 [railsjedi]
+
+== Version 1.7.0 (July 9, 2010)
+
+* Add support for new Braintree Blue Gateway (using the braintree gem) [Braintree]
+
+== Version 1.6.0 (July 6, 2010)
+
+* Add a task rake gateways:hosts to get a list of all outbound hosts and ports [cody]
+* Fix test failure in chronopay helper in Ruby 1.9.1 [cody]
+* Fix timezone issue in credit card test. [cody]
+* Fix failing unit test for Garanti gateway [cody]
+* Fix failing CyberSource remote test [Patrick Joyce]
+* Support for Garanti Sanal Pos: Turkish bank and billing gateway [Selem Delul]
+* Add deprecation note for Money objects to Bogus gateway [Soleone]
+* Updated test URL for Merchant eSolutions and added valid remote test credentials [Soleone]
+* Add new error class for SSL certificate problems in connection class  [Soleone]
 * Update valid_month and valid_expiry_year to coerce string arguments to integers [cody]
 * Add support for displaying credit cards with PayPal Express. Use the :allow_guest_checkout => true option when setting up the transaction [Edward Ocampo-Gooding]
 * Use card_brand method for checking for checks in Sage and Beanstream [cody]

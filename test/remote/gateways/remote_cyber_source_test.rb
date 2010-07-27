@@ -12,7 +12,7 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     @amount = 100
     
     @options = {
-      :billing_address => address.merge(:first_name => 'Jim', :last_name => 'Smith'),
+      :billing_address => address,
 
       :order_id => generate_unique_id,
       :line_items => [
@@ -34,21 +34,6 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
       :email => 'someguy1232@fakeemail.net',
       :ignore_avs => 'true',
       :ignore_cvv => 'true'
-    }
-
-    @subscription_options = {
-      :order_id => generate_unique_id,
-      :email => 'someguy1232@fakeemail.net',
-      :credit_card => @credit_card,
-      :setup_fee => 100,
-      :billing_address => address.merge(:first_name => 'Jim', :last_name => 'Smith'),
-      :subscription => {
-        :frequency => "weekly",
-        :start_date => Date.today.next_week,
-        :occurrences => 4,
-        :auto_renew => true,
-        :amount => 100
-      }
     }
 
   end
@@ -141,9 +126,11 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
 
   def test_invalid_login
     gateway = CyberSourceGateway.new( :login => '', :password => '' )
-    assert_raises ActiveMerchant::ResponseError do
-      assert response = gateway.purchase(@amount, @credit_card, @options)
+    authentication_exception = assert_raise ActiveMerchant::ResponseError, 'Failed with 500 Internal Server Error' do
+      gateway.purchase(@amount, @credit_card, @options)
     end
+    assert response = authentication_exception.response
+    assert_match /wsse:InvalidSecurity/, response.body
   end
   
   def test_successful_credit
@@ -155,48 +142,5 @@ class RemoteCyberSourceTest < Test::Unit::TestCase
     assert_equal 'Successful transaction', response.message
     assert_success response
     assert response.test?       
-  end
-
-  def test_successful_create_subscription
-    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
-  end
-
-  def test_successful_update_subscription
-    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
-
-    assert response = @gateway.update_subscription(response.authorization, @subscription_options.merge(:subscription => {:amount => 500}))
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
-  end
-
-  def test_successful_subscription_purchase
-    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
-
-    assert response = @gateway.subscription_purchase(@amount, response.authorization, @options)
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
-  end
-
-  def test_successful_subscription_retrieval
-    assert response = @gateway.create_subscription(@credit_card, @subscription_options)
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
-
-    assert response = @gateway.retrieve_subscription(response.authorization, @options)
-    assert_equal 'Successful transaction', response.message
-    assert_success response
-    assert response.test?
   end
 end
