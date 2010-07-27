@@ -7,6 +7,7 @@ require 'money'
 require 'mocha'
 require 'yaml'
 require 'active_merchant'
+require 'fastercsv'
 
 begin
   gem 'actionpack'

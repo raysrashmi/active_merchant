@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 module ActiveMerchant #:nodoc:
   module Billing #:nodoc:
     module BeanstreamCore
