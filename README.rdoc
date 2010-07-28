@@ -134,3 +134,48 @@ Installation from RubyGems
 == Contributing
 
 Please see the {ActiveMerchant Guide to Contributing}[http://github.com/Shopify/active_merchant/wikis/contributing] for information on adding a new gateway to ActiveMerchant.
+
+  merchant_id = '123456789'
+  user = 'beanstream_user'
+  password = 'beanstream_password'
+  amount = 2000
+
+  gateway = ActiveMerchant::Billing::BeanstreamGateway.new(
+                                                         :login => merchant_id,
+                                                         :user => user,
+                                                         :password => password
+                                                         )
+  creditcard = ActiveMerchant::Billing::CreditCard.new(
+                                                     :number => '4030000010001234',
+                                                     :month => 8,
+                                                     :year => 2012,
+                                                     :first_name => 'Neeraj',
+                                                     :last_name => 'Kumar',
+                                                     :verification_value => 123
+                                                     )
+  # Make recurring payment for the amount
+  response = gateway.recurring(amount, creditcard, {
+                               :recurring_billing => {
+                                 :end_of_month => '0',
+                                 :tax1 => 0,
+                                 :interval => {
+                                   :unit => :months,
+                                   :length => '1'
+                                 },
+                                 :duration => {
+                                   :start_date => Date.today,
+                                   :occurrences => 5
+                                 }
+                               },
+                             :order_id =>  "ORDER#{Time.now.to_i}",
+                             :billing_address => {
+                               :name => 'xiaobo zzz',
+                               :phone => '514-766-2333',
+                               :address1 => '123 Rene-levesque St.',
+                               :city => 'Montreal',
+                               :state => 'QC',
+                               :country => 'CA',
+                               :zip => 'H4D1W9'
+                             },
+                             :email => 'foo@example.com'})
+
